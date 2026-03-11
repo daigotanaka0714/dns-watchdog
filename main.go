@@ -9,8 +9,14 @@ import (
 )
 
 func main() {
-	// 1. Config path from DNS_WATCHDOG_CONFIG env var, or default to ./config.yml relative to executable
-	configPath := os.Getenv("DNS_WATCHDOG_CONFIG")
+	// 1. Config path: CLI arg > DNS_WATCHDOG_CONFIG env > ./config.yml
+	configPath := ""
+	if len(os.Args) > 1 {
+		configPath = os.Args[1]
+	}
+	if configPath == "" {
+		configPath = os.Getenv("DNS_WATCHDOG_CONFIG")
+	}
 	if configPath == "" {
 		exe, err := os.Executable()
 		if err != nil {

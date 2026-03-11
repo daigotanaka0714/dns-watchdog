@@ -1,0 +1,16 @@
+name: 'DNS Watchdog'
+description: 'Monitor DNS records and alert on changes via Slack'
+inputs:
+  config:
+    description: 'Path to config YAML file'
+    required: true
+  slack_webhook:
+    description: 'Slack Webhook URL'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.config }}
+  env:
+    DNS_MONITOR_SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook }}
