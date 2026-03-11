@@ -23,7 +23,9 @@ notify:
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
-	os.WriteFile(path, []byte(content), 0644)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	cfg, err := LoadConfig(path)
 	if err != nil {
@@ -60,7 +62,9 @@ checks:
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
-	os.WriteFile(path, []byte(content), 0644)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	_, err := LoadConfig(path)
 	if err == nil {
@@ -75,7 +79,9 @@ checks: []
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
-	os.WriteFile(path, []byte(content), 0644)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	_, err := LoadConfig(path)
 	if err == nil {
@@ -94,7 +100,9 @@ checks:
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
-	os.WriteFile(path, []byte(content), 0644)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	_, err := LoadConfig(path)
 	if err == nil {
@@ -111,7 +119,9 @@ checks:
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
-	os.WriteFile(path, []byte(content), 0644)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	_, err := LoadConfig(path)
 	if err == nil {

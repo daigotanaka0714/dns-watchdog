@@ -40,7 +40,10 @@ func TestQueryDNS_UnsupportedType(t *testing.T) {
 func newMockDoHServer(response DoHResponse) *httptest.Server {
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/dns-json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	}))
 }
 
