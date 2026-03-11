@@ -27,3 +27,10 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update major version tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          MAJOR="${TAG%%.*}"
+          git tag -f "$MAJOR" "$TAG"
+          git push origin "$MAJOR" --force
