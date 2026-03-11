@@ -1,0 +1,25 @@
+domain: example.com
+checks:
+  - type: A
+    name: "@"
+    expected:
+      - "93.184.216.34"
+  - type: MX
+    name: "@"
+    expected:
+      - "10 mail.example.com."
+  - type: TXT
+    name: "@"
+    contains: "v=spf1"
+  - type: NS
+    name: "@"
+    expected:
+      - "ns1.example.com."
+      - "ns2.example.com."
+  - type: CNAME
+    name: "www"
+    expected:
+      - "example.com."
+notify:
+  slack_webhook_env: "SLACK_WEBHOOK_URL"
+  template: "default"
