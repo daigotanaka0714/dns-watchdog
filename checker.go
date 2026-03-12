@@ -188,28 +188,3 @@ func RunAllChecks(cfg *Config, baseURL string) []CheckResult {
 
 	return failures
 }
-
-// RunBlocklistCheck checks if a domain is on a blocklist.
-func RunBlocklistCheck(cfg *Config, check CheckEntry) CheckResult {
-	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
-}
-
-// RunCertCheck checks TLS certificate expiry.
-func RunCertCheck(cfg *Config, check CheckEntry) CheckResult {
-	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
-}
-
-// RunWhoisCheck checks WHOIS domain expiry.
-func RunWhoisCheck(cfg *Config, check CheckEntry) CheckResult {
-	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
-}
-
-// RunNSConsistencyCheck checks nameserver consistency.
-func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
-	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
-}
-
-// RunPropagationCheck checks DNS propagation.
-func RunPropagationCheck(cfg *Config, check CheckEntry) CheckResult {
-	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
-}
