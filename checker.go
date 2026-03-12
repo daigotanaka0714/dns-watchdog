@@ -160,11 +160,56 @@ func RunAllChecks(cfg *Config, baseURL string) []CheckResult {
 
 	var failures []CheckResult
 	for _, check := range cfg.Checks {
-		result := RunCheck(cfg, check, client, baseURL)
+		var result CheckResult
+		switch check.Type {
+		case "BLOCKLIST":
+			result = RunBlocklistCheck(cfg, check)
+		case "CERT_EXPIRY":
+			result = RunCertCheck(cfg, check)
+		case "WHOIS_EXPIRY":
+			result = RunWhoisCheck(cfg, check)
+		case "NS_CONSISTENCY":
+			result = RunNSConsistencyCheck(cfg, check)
+		case "PROPAGATION":
+			result = RunPropagationCheck(cfg, check)
+		case "A", "NS", "CNAME", "MX", "TXT":
+			result = RunCheck(cfg, check, client, baseURL)
+		default:
+			result = CheckResult{
+				Check: check,
+				OK:    false,
+				Error: fmt.Sprintf("unknown check type: %s", check.Type),
+			}
+		}
 		if !result.OK {
 			failures = append(failures, result)
 		}
 	}
 
 	return failures
+}
+
+// RunBlocklistCheck checks if a domain is on a blocklist.
+func RunBlocklistCheck(cfg *Config, check CheckEntry) CheckResult {
+	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
+}
+
+// RunCertCheck checks TLS certificate expiry.
+func RunCertCheck(cfg *Config, check CheckEntry) CheckResult {
+	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
+}
+
+// RunWhoisCheck checks WHOIS domain expiry.
+func RunWhoisCheck(cfg *Config, check CheckEntry) CheckResult {
+	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
+}
+
+// RunNSConsistencyCheck checks nameserver consistency.
+func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
+	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
+}
+
+// RunPropagationCheck checks DNS propagation.
+func RunPropagationCheck(cfg *Config, check CheckEntry) CheckResult {
+	return CheckResult{Check: check, OK: false, Error: "not yet implemented"}
 }

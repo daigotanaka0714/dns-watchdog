@@ -135,6 +135,58 @@ func TestRunCheck_Contains_Fail(t *testing.T) {
 	}
 }
 
+func TestRunAllChecks_UnknownType(t *testing.T) {
+	cfg := &Config{
+		Domain: "example.com",
+		Checks: []CheckEntry{
+			{Type: "UNKNOWN_TYPE", Name: "@"},
+		},
+	}
+
+	failures := RunAllChecks(cfg, "")
+	if len(failures) != 1 {
+		t.Fatalf("expected 1 failure, got %d", len(failures))
+	}
+	if failures[0].Error != "unknown check type: UNKNOWN_TYPE" {
+		t.Errorf("expected unknown check type error, got: %s", failures[0].Error)
+	}
+}
+
+func TestRunAllChecks_StubsReturnNotImplemented(t *testing.T) {
+	tests := []struct {
+		name      string
+		checkType string
+	}{
+		{"blocklist stub", "BLOCKLIST"},
+		{"cert stub", "CERT_EXPIRY"},
+		{"whois stub", "WHOIS_EXPIRY"},
+		{"ns consistency stub", "NS_CONSISTENCY"},
+		{"propagation stub", "PROPAGATION"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Domain: "example.com",
+				Checks: []CheckEntry{
+					{Type: tt.checkType, Name: "@"},
+				},
+			}
+
+			failures := RunAllChecks(cfg, "")
+			if len(failures) != 1 {
+				t.Fatalf("expected 1 failure, got %d", len(failures))
+			}
+			if failures[0].OK {
+				t.Error("expected OK=false for stub")
+			}
+			if failures[0].Error != "not yet implemented" {
+				t.Errorf("expected 'not yet implemented' error, got: %s", failures[0].Error)
+			}
+		})
+	}
+}
+
 func TestExactMatchLogic(t *testing.T) {
 	tests := []struct {
 		name     string
