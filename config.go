@@ -18,6 +18,15 @@ type CheckEntry struct {
 	Name     string   `yaml:"name"`
 	Expected []string `yaml:"expected,omitempty"`
 	Contains string   `yaml:"contains,omitempty"`
+	Host     string   `yaml:"host,omitempty"`
+	WarnDays int      `yaml:"warn_days,omitempty"`
+}
+
+// selfContainedTypes are check types that do not require expected or contains fields.
+var selfContainedTypes = map[string]bool{
+	"CERT_EXPIRY":    true,
+	"WHOIS_EXPIRY":   true,
+	"NS_CONSISTENCY": true,
 }
 
 type NotifyConfig struct {
@@ -47,7 +56,7 @@ func LoadConfig(path string) (*Config, error) {
 		if check.Type == "" {
 			return nil, fmt.Errorf("check[%d]: type is required", i)
 		}
-		if len(check.Expected) == 0 && check.Contains == "" {
+		if !selfContainedTypes[check.Type] && len(check.Expected) == 0 && check.Contains == "" {
 			return nil, fmt.Errorf("check[%d]: either expected or contains is required", i)
 		}
 	}
