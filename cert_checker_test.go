@@ -70,3 +70,24 @@ func TestRunCertCheck_ExpiringSoon(t *testing.T) {
 		t.Error("expected OK=false for expiring cert")
 	}
 }
+
+func TestRunCertCheck_AlreadyExpired(t *testing.T) {
+	server := newTLSServer(time.Now().Add(-5 * 24 * time.Hour))
+	defer server.Close()
+
+	addr := strings.TrimPrefix(server.URL, "https://")
+
+	origDialer := certDialer
+	defer func() { certDialer = origDialer }()
+	certDialer = &tls.Dialer{Config: &tls.Config{InsecureSkipVerify: true}}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{Type: "CERT_EXPIRY", Name: "@", Host: addr, WarnDays: 30}
+	result := RunCertCheck(cfg, check)
+	if result.OK {
+		t.Error("expected OK=false for expired cert")
+	}
+	if len(result.Actual) == 0 || !strings.Contains(result.Actual[0], "期限切れ") {
+		t.Errorf("expected 期限切れ message, got: %v", result.Actual)
+	}
+}

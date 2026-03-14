@@ -24,10 +24,8 @@ func TestRunPropagationCheck_Mismatch(t *testing.T) {
 	origFn := propagationQueryFn
 	defer func() { propagationQueryFn = origFn }()
 
-	callCount := 0
-	propagationQueryFn = func(domain, resolver, qtype string) ([]string, error) {
-		callCount++
-		if callCount == 2 {
+	propagationQueryFn = func(domain, resolverAddr, qtype string) ([]string, error) {
+		if resolverAddr == "1.1.1.1:53" {
 			return []string{"5.6.7.8"}, nil
 		}
 		return []string{"1.2.3.4"}, nil

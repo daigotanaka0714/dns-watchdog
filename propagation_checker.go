@@ -9,11 +9,16 @@ import (
 	"time"
 )
 
-var publicResolvers = map[string]string{
-	"Google":     "8.8.8.8:53",
-	"Cloudflare": "1.1.1.1:53",
-	"OpenDNS":    "208.67.222.222:53",
-	"Quad9":      "9.9.9.9:53",
+type resolver struct {
+	Name string
+	Addr string
+}
+
+var publicResolvers = []resolver{
+	{"Google", "8.8.8.8:53"},
+	{"Cloudflare", "1.1.1.1:53"},
+	{"OpenDNS", "208.67.222.222:53"},
+	{"Quad9", "9.9.9.9:53"},
 }
 
 var propagationQueryFn = func(domain, resolver, qtype string) ([]string, error) {
@@ -46,10 +51,10 @@ func RunPropagationCheck(cfg *Config, check CheckEntry) CheckResult {
 	sort.Strings(expectedSorted)
 
 	var mismatches []string
-	for name, resolver := range publicResolvers {
-		records, err := propagationQueryFn(domain, resolver, "A")
+	for _, r := range publicResolvers {
+		records, err := propagationQueryFn(domain, r.Addr, "A")
 		if err != nil {
-			mismatches = append(mismatches, fmt.Sprintf("%s (%s): error - %v", name, resolver, err))
+			mismatches = append(mismatches, fmt.Sprintf("%s (%s): error - %v", r.Name, r.Addr, err))
 			continue
 		}
 
@@ -59,7 +64,7 @@ func RunPropagationCheck(cfg *Config, check CheckEntry) CheckResult {
 
 		if !slicesEqual(expectedSorted, sorted) {
 			mismatches = append(mismatches,
-				fmt.Sprintf("%s (%s): [%s]", name, resolver, strings.Join(sorted, ", ")))
+				fmt.Sprintf("%s (%s): [%s]", r.Name, r.Addr, strings.Join(sorted, ", ")))
 		}
 	}
 

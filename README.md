@@ -81,8 +81,7 @@ checks:
   # Extended monitoring
   - type: BLOCKLIST
     name: "@"
-    expected:
-      - "93.184.216.34"
+    host: "93.184.216.34"
   - type: NS_CONSISTENCY
     name: "@"
     expected:
@@ -121,11 +120,11 @@ Each check requires either `expected` (a list of exact values) or `contains` (a 
 
 | Type | Description | Fields |
 |---|---|---|
-| `BLOCKLIST` | Check if IPs are listed on DNS blocklists (Spamhaus, SpamCop, Barracuda) | `expected`: list of IPs to check |
-| `NS_CONSISTENCY` | Verify all authoritative nameservers return identical results | `expected`: record types to check (e.g. `["A"]`) |
+| `BLOCKLIST` | Check if IPs are listed on DNS blocklists | `host`: IP to check (default: resolves domain A record), `blocklists`: list of DNSBL servers (default: Spamhaus, SpamCop, Barracuda). Validates response codes to avoid false positives from error responses. |
+| `NS_CONSISTENCY` | Verify all authoritative nameservers return identical results | `expected`: record types to check (default: `["A", "MX", "TXT", "NS"]`) |
 | `CERT_EXPIRY` | Warn before SSL/TLS certificate expires | `host`: address to connect to (default: `domain:443`), `warn_days`: threshold (default: 30) |
 | `PROPAGATION` | Verify DNS records are consistent across public resolvers | `expected`: expected record values |
-| `WHOIS_EXPIRY` | Warn before domain registration expires | `warn_days`: threshold (default: 60) |
+| `WHOIS_EXPIRY` | Warn before domain registration expires (supports all TLDs) | `warn_days`: threshold (default: 60) |
 
 ### GitHub Action workflow example
 

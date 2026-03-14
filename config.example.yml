@@ -29,10 +29,14 @@ checks:
   # --- Extended monitoring ---
 
   # Blocklist: check if IPs are listed on DNS blocklists
+  # Uses default blocklists (Spamhaus, SpamCop, Barracuda) if blocklists not specified.
+  # Resolves domain A record if host not specified.
   - type: BLOCKLIST
     name: "@"
-    expected:
-      - "93.184.216.34"
+    host: "93.184.216.34"
+    # blocklists:               # optional: override default blocklists
+    #   - "zen.spamhaus.org"
+    #   - "bl.spamcop.net"
 
   # NS consistency: verify all authoritative NS return identical results
   - type: NS_CONSISTENCY

@@ -1,58 +1,207 @@
 package main
 
 import (
+	"fmt"
+	"net"
+	"strings"
 	"testing"
 )
 
-func TestReverseIP(t *testing.T) {
+func TestIsBlocklistListing_ValidCodes(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		name string
+		addr string
+		want bool
 	}{
-		{"1.2.3.4", "4.3.2.1"},
-		{"192.168.1.1", "1.1.168.192"},
+		{"valid listing 127.0.0.2", "127.0.0.2", true},
+		{"valid listing 127.0.0.3", "127.0.0.3", true},
+		{"valid listing 127.0.0.10", "127.0.0.10", true},
+		{"valid listing 127.0.0.255", "127.0.0.255", true},
+		{"not listed 127.0.0.0", "127.0.0.0", false},
+		{"not listed 127.0.0.1 (localhost)", "127.0.0.1", false},
+		{"spamhaus error 127.255.255.254", "127.255.255.254", false},
+		{"spamhaus rate limit 127.255.255.255", "127.255.255.255", false},
+		{"non-loopback 192.168.1.1", "192.168.1.1", false},
+		{"invalid IP", "not-an-ip", false},
+		{"empty string", "", false},
+		{"IPv6 address", "::1", false},
+		{"127.0.1.2 wrong subnet", "127.0.1.2", false},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := reverseIP(tt.input)
-			if result != tt.expected {
-				t.Errorf("reverseIP(%q) = %q, want %q", tt.input, result, tt.expected)
+		t.Run(tt.name, func(t *testing.T) {
+			got := isBlocklistListing(tt.addr)
+			if got != tt.want {
+				t.Errorf("isBlocklistListing(%q) = %v, want %v", tt.addr, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestCheckBlocklist_NotListed(t *testing.T) {
-	lookupFn := func(host string) ([]string, error) {
-		return nil, nil
-	}
-	listed, err := checkBlocklistWith("1.2.3.4", "zen.spamhaus.org", lookupFn)
+func TestReverseIP(t *testing.T) {
+	rev, err := reverseIP("1.2.3.4")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if listed {
-		t.Error("expected not listed, got listed")
+	if rev != "4.3.2.1" {
+		t.Errorf("expected 4.3.2.1, got %s", rev)
+	}
+
+	_, err = reverseIP("invalid")
+	if err == nil {
+		t.Fatal("expected error for invalid IP")
 	}
 }
 
-func TestCheckBlocklist_Listed(t *testing.T) {
-	lookupFn := func(host string) ([]string, error) {
-		return []string{"127.0.0.2"}, nil
+// mockLookup creates a lookup function that returns predefined results per query.
+func mockLookup(responses map[string][]string, errors map[string]error) func(string) ([]string, error) {
+	return func(host string) ([]string, error) {
+		if err, ok := errors[host]; ok {
+			return nil, err
+		}
+		if addrs, ok := responses[host]; ok {
+			return addrs, nil
+		}
+		// Default: NXDOMAIN (not found)
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
-	listed, err := checkBlocklistWith("1.2.3.4", "zen.spamhaus.org", lookupFn)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+}
+
+func TestRunBlocklistCheck_PartialDNSBLFailure(t *testing.T) {
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+
+	lookupHostFunc = mockLookup(
+		map[string][]string{
+			"1.4.3.2.bl-listed.example": {"127.0.0.2"},
+		},
+		map[string]error{
+			"1.4.3.2.bl-error.example": fmt.Errorf("temporary DNS failure"),
+		},
+	)
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{
+		Type:       "BLOCKLIST",
+		Name:       "@",
+		Host:       "2.3.4.1",
+		Blocklists: []string{"bl-error.example", "bl-ok.example", "bl-listed.example"},
 	}
-	if !listed {
-		t.Error("expected listed, got not listed")
+
+	result := RunBlocklistCheck(cfg, check)
+
+	if result.OK {
+		t.Error("expected OK=false because IP is listed on bl-listed.example")
+	}
+	if len(result.Actual) != 1 || !strings.Contains(result.Actual[0], "bl-listed.example") {
+		t.Errorf("expected listed on [bl-listed.example], got %v", result.Actual)
+	}
+	if !strings.Contains(result.Error, "bl-error.example") {
+		t.Errorf("expected warning about bl-error.example, got: %s", result.Error)
+	}
+}
+
+func TestRunBlocklistCheck_SpamhausErrorCode(t *testing.T) {
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+
+	lookupHostFunc = mockLookup(
+		map[string][]string{
+			"1.4.3.2.zen.spamhaus.org": {"127.255.255.254"},
+		},
+		nil,
+	)
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{
+		Type:       "BLOCKLIST",
+		Name:       "@",
+		Host:       "2.3.4.1",
+		Blocklists: []string{"zen.spamhaus.org"},
+	}
+
+	result := RunBlocklistCheck(cfg, check)
+
+	if !result.OK {
+		t.Errorf("expected OK=true (127.255.255.254 is not a listing), got false. Error: %s", result.Error)
+	}
+}
+
+func TestRunBlocklistCheck_CustomBlocklists(t *testing.T) {
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+
+	queriedHosts := make(map[string]bool)
+	lookupHostFunc = func(host string) ([]string, error) {
+		queriedHosts[host] = true
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{
+		Type:       "BLOCKLIST",
+		Name:       "@",
+		Host:       "10.20.30.40",
+		Blocklists: []string{"custom1.example.com", "custom2.example.com"},
+	}
+
+	result := RunBlocklistCheck(cfg, check)
+
+	if !result.OK {
+		t.Errorf("expected OK=true, got false. Error: %s", result.Error)
+	}
+
+	if !queriedHosts["40.30.20.10.custom1.example.com"] {
+		t.Error("expected query to custom1.example.com")
+	}
+	if !queriedHosts["40.30.20.10.custom2.example.com"] {
+		t.Error("expected query to custom2.example.com")
+	}
+
+	for _, def := range defaultBlocklists {
+		defQuery := "40.30.20.10." + def
+		if queriedHosts[defQuery] {
+			t.Errorf("default blocklist %s should not have been queried when custom blocklists are set", def)
+		}
+	}
+}
+
+func TestRunBlocklistCheck_DefaultBlocklists(t *testing.T) {
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+
+	queriedHosts := make(map[string]bool)
+	lookupHostFunc = func(host string) ([]string, error) {
+		queriedHosts[host] = true
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{
+		Type: "BLOCKLIST",
+		Name: "@",
+		Host: "10.20.30.40",
+	}
+
+	result := RunBlocklistCheck(cfg, check)
+
+	if !result.OK {
+		t.Errorf("expected OK=true, got false. Error: %s", result.Error)
+	}
+
+	for _, def := range defaultBlocklists {
+		defQuery := "40.30.20.10." + def
+		if !queriedHosts[defQuery] {
+			t.Errorf("expected default blocklist %s to be queried", def)
+		}
 	}
 }
 
 func TestRunBlocklistCheck_AllClear(t *testing.T) {
-	origLookup := dnsLookupHost
-	defer func() { dnsLookupHost = origLookup }()
-	dnsLookupHost = func(host string) ([]string, error) {
-		return nil, nil
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+	lookupHostFunc = func(host string) ([]string, error) {
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
 
 	cfg := &Config{Domain: "example.com"}
@@ -64,11 +213,14 @@ func TestRunBlocklistCheck_AllClear(t *testing.T) {
 }
 
 func TestRunBlocklistCheck_Listed(t *testing.T) {
-	origLookup := dnsLookupHost
-	defer func() { dnsLookupHost = origLookup }()
-	dnsLookupHost = func(host string) ([]string, error) {
-		return []string{"127.0.0.2"}, nil
-	}
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+	lookupHostFunc = mockLookup(
+		map[string][]string{
+			"4.3.2.1.zen.spamhaus.org": {"127.0.0.2"},
+		},
+		nil,
+	)
 
 	cfg := &Config{Domain: "example.com"}
 	check := CheckEntry{Type: "BLOCKLIST", Name: "@", Expected: []string{"1.2.3.4"}}

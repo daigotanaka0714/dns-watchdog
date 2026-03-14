@@ -51,7 +51,12 @@ func RunCertCheck(cfg *Config, check CheckEntry) CheckResult {
 	leaf := certs[0]
 	daysUntilExpiry := int(time.Until(leaf.NotAfter).Hours() / 24)
 
-	if daysUntilExpiry < warnDays {
+	if daysUntilExpiry < 0 {
+		result.OK = false
+		result.Actual = []string{
+			fmt.Sprintf("期限切れ（%d日前に失効, %s）", -daysUntilExpiry, leaf.NotAfter.Format("2006-01-02")),
+		}
+	} else if daysUntilExpiry < warnDays {
 		result.OK = false
 		result.Actual = []string{
 			fmt.Sprintf("expires in %d days (%s)", daysUntilExpiry, leaf.NotAfter.Format("2006-01-02")),

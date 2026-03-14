@@ -142,8 +142,7 @@ domain: example.com
 checks:
   - type: BLOCKLIST
     name: "@"
-    expected:
-      - "clean"
+    host: "1.2.3.4"
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
@@ -264,7 +263,7 @@ checks:
 
 func TestLoadConfig_SelfContainedTypeNoExpected(t *testing.T) {
 	// Self-contained types should not require expected or contains
-	for _, typ := range []string{"CERT_EXPIRY", "WHOIS_EXPIRY", "NS_CONSISTENCY"} {
+	for _, typ := range []string{"BLOCKLIST", "CERT_EXPIRY", "WHOIS_EXPIRY", "NS_CONSISTENCY"} {
 		content := `
 domain: example.com
 checks:
@@ -285,8 +284,8 @@ checks:
 }
 
 func TestLoadConfig_NonSelfContainedStillRequiresExpected(t *testing.T) {
-	// Non-self-contained types like BLOCKLIST and PROPAGATION still need expected/contains
-	for _, typ := range []string{"BLOCKLIST", "PROPAGATION"} {
+	// Non-self-contained types like PROPAGATION still need expected/contains
+	for _, typ := range []string{"PROPAGATION"} {
 		content := `
 domain: example.com
 checks:
