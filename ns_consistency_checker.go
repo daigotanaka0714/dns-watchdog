@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var defaultNSCheckTypes = []string{"A", "MX", "TXT", "NS"}
+
 var nsLookupFn = func(domain string) ([]string, error) {
 	nss, err := net.LookupNS(domain)
 	if err != nil {
@@ -32,11 +34,33 @@ var queryNSFn = func(domain, ns, qtype string) ([]string, error) {
 			return d.DialContext(ctx, "udp", ns)
 		},
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	switch qtype {
 	case "A":
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
 		return resolver.LookupHost(ctx, domain)
+	case "MX":
+		mxs, err := resolver.LookupMX(ctx, domain)
+		if err != nil {
+			return nil, err
+		}
+		var results []string
+		for _, mx := range mxs {
+			results = append(results, fmt.Sprintf("%d %s", mx.Pref, mx.Host))
+		}
+		return results, nil
+	case "TXT":
+		return resolver.LookupTXT(ctx, domain)
+	case "NS":
+		nss, err := resolver.LookupNS(ctx, domain)
+		if err != nil {
+			return nil, err
+		}
+		var results []string
+		for _, ns := range nss {
+			results = append(results, ns.Host)
+		}
+		return results, nil
 	default:
 		return nil, fmt.Errorf("unsupported query type for NS consistency: %s", qtype)
 	}
@@ -72,7 +96,12 @@ func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
 		return result
 	}
 
-	for _, qtype := range check.Expected {
+	checkTypes := check.Expected
+	if len(checkTypes) == 0 {
+		checkTypes = defaultNSCheckTypes
+	}
+
+	for _, qtype := range checkTypes {
 		var referenceResult []string
 		var referenceNS string
 

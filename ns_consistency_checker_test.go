@@ -55,6 +55,57 @@ func TestRunNSConsistencyCheck_Inconsistent(t *testing.T) {
 	}
 }
 
+func TestRunNSConsistencyCheck_DefaultRecordTypes(t *testing.T) {
+	origNSLookup := nsLookupFn
+	origQueryNS := queryNSFn
+	defer func() {
+		nsLookupFn = origNSLookup
+		queryNSFn = origQueryNS
+	}()
+
+	nsLookupFn = func(domain string) ([]string, error) {
+		return []string{"ns1.example.com.", "ns2.example.com."}, nil
+	}
+	var queriedTypes []string
+	queryNSFn = func(domain, ns, qtype string) ([]string, error) {
+		queriedTypes = append(queriedTypes, qtype)
+		return []string{"1.2.3.4"}, nil
+	}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{Type: "NS_CONSISTENCY", Name: "@"} // Empty Expected
+	result := RunNSConsistencyCheck(cfg, check)
+	if !result.OK {
+		t.Errorf("expected OK=true, got false. Error: %s", result.Error)
+	}
+	if len(queriedTypes) == 0 {
+		t.Error("expected default record types to be queried, but none were")
+	}
+}
+
+func TestRunNSConsistencyCheck_MXConsistency(t *testing.T) {
+	origNSLookup := nsLookupFn
+	origQueryNS := queryNSFn
+	defer func() {
+		nsLookupFn = origNSLookup
+		queryNSFn = origQueryNS
+	}()
+
+	nsLookupFn = func(domain string) ([]string, error) {
+		return []string{"ns1.example.com.", "ns2.example.com."}, nil
+	}
+	queryNSFn = func(domain, ns, qtype string) ([]string, error) {
+		return []string{"10 mail.example.com."}, nil
+	}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{Type: "NS_CONSISTENCY", Name: "@", Expected: []string{"MX"}}
+	result := RunNSConsistencyCheck(cfg, check)
+	if !result.OK {
+		t.Errorf("expected OK=true for consistent MX, got false. Error: %s", result.Error)
+	}
+}
+
 func TestRunNSConsistencyCheck_NoNSFound(t *testing.T) {
 	origNSLookup := nsLookupFn
 	defer func() { nsLookupFn = origNSLookup }()
