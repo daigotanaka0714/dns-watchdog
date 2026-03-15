@@ -135,6 +135,23 @@ func TestRunCheck_Contains_Fail(t *testing.T) {
 	}
 }
 
+func TestRunAllChecks_UnknownType(t *testing.T) {
+	cfg := &Config{
+		Domain: "example.com",
+		Checks: []CheckEntry{
+			{Type: "UNKNOWN_TYPE", Name: "@"},
+		},
+	}
+
+	failures := RunAllChecks(cfg, "")
+	if len(failures) != 1 {
+		t.Fatalf("expected 1 failure, got %d", len(failures))
+	}
+	if failures[0].Error != "unknown check type: UNKNOWN_TYPE" {
+		t.Errorf("expected unknown check type error, got: %s", failures[0].Error)
+	}
+}
+
 func TestExactMatchLogic(t *testing.T) {
 	tests := []struct {
 		name     string

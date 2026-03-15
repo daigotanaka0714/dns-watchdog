@@ -4,9 +4,13 @@ DNS record monitoring tool with Slack notifications.
 
 ## Features
 
-- **Record types**: A, MX, TXT, NS, CNAME
-- **Match modes**: exact match (`expected`) and substring match (`contains`)
-- **Slack notifications**: sends alerts on mismatches via incoming webhook
+- **DNS record checks**: A, MX, TXT, NS, CNAME with exact or substring matching
+- **DNS blocklist monitoring**: checks if your IPs are listed on DNSBL (Spamhaus, SpamCop, Barracuda)
+- **Nameserver consistency**: verifies all authoritative NS return identical results
+- **SSL certificate expiry**: warns before certificates expire
+- **DNS propagation**: verifies records are consistent across major public resolvers (Google, Cloudflare, OpenDNS, Quad9)
+- **Domain expiry**: WHOIS-based domain registration expiry warnings
+- **Slack notifications**: sends alerts on failures via incoming webhook
 - **DNS-over-HTTPS**: queries Google Public DNS (dns.google) -- no local resolver dependency
 - **Single binary**: zero runtime dependencies, easy to deploy
 - **CLI + GitHub Action**: run locally or on a schedule in CI
@@ -65,6 +69,7 @@ dns-watchdog uses a YAML config file. See [`config.example.yml`](config.example.
 ```yaml
 domain: example.com
 checks:
+  # DNS record checks
   - type: A
     name: "@"
     expected:
@@ -72,12 +77,34 @@ checks:
   - type: TXT
     name: "@"
     contains: "v=spf1"
+
+  # Extended monitoring
+  - type: BLOCKLIST
+    name: "@"
+    host: "93.184.216.34"
+  - type: NS_CONSISTENCY
+    name: "@"
+    expected:
+      - "A"
+  - type: CERT_EXPIRY
+    name: "@"
+    host: "example.com:443"
+    warn_days: 30
+  - type: PROPAGATION
+    name: "@"
+    expected:
+      - "93.184.216.34"
+  - type: WHOIS_EXPIRY
+    name: "@"
+    warn_days: 60
 notify:
   slack_webhook_env: "SLACK_WEBHOOK_URL"
   template: "default"
 ```
 
 #### Check types
+
+##### DNS record checks
 
 | Type | Description | Match mode |
 |---|---|---|
@@ -88,6 +115,16 @@ notify:
 | `CNAME` | Canonical name records | `expected` (exact) |
 
 Each check requires either `expected` (a list of exact values) or `contains` (a substring to search for in any returned record).
+
+##### Extended monitoring
+
+| Type | Description | Fields |
+|---|---|---|
+| `BLOCKLIST` | Check if IPs are listed on DNS blocklists | `host`: IP to check (default: resolves domain A record), `blocklists`: list of DNSBL servers (default: Spamhaus, SpamCop, Barracuda). Validates response codes to avoid false positives from error responses. |
+| `NS_CONSISTENCY` | Verify all authoritative nameservers return identical results | `expected`: record types to check (default: `["A", "MX", "TXT", "NS"]`) |
+| `CERT_EXPIRY` | Warn before SSL/TLS certificate expires | `host`: address to connect to (default: `domain:443`), `warn_days`: threshold (default: 30) |
+| `PROPAGATION` | Verify DNS records are consistent across public resolvers | `expected`: expected record values |
+| `WHOIS_EXPIRY` | Warn before domain registration expires (supports all TLDs) | `warn_days`: threshold (default: 60) |
 
 ### GitHub Action workflow example
 

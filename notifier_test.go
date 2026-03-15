@@ -70,6 +70,91 @@ func TestFormatFailures_Contains(t *testing.T) {
 	}
 }
 
+func TestFormatFailures_Blocklist(t *testing.T) {
+	failures := []CheckResult{
+		{
+			Check:  CheckEntry{Type: "BLOCKLIST", Name: "@", Expected: []string{"1.2.3.4"}},
+			Actual: []string{"1.2.3.4 listed on zen.spamhaus.org"},
+			OK:     false,
+		},
+	}
+	msg := FormatFailures("example.com", failures)
+	if !strings.Contains(msg, "BLOCKLIST") {
+		t.Errorf("expected BLOCKLIST, got:\n%s", msg)
+	}
+	if !strings.Contains(msg, "ブロックリスト検知") {
+		t.Errorf("expected ブロックリスト検知, got:\n%s", msg)
+	}
+	if !strings.Contains(msg, "zen.spamhaus.org") {
+		t.Errorf("expected zen.spamhaus.org, got:\n%s", msg)
+	}
+}
+
+func TestFormatFailures_CertExpiry(t *testing.T) {
+	failures := []CheckResult{
+		{
+			Check:  CheckEntry{Type: "CERT_EXPIRY", Name: "@", Host: "example.com:443", WarnDays: 30},
+			Actual: []string{"expires in 10 days (2026-03-21)"},
+			OK:     false,
+		},
+	}
+	msg := FormatFailures("example.com", failures)
+	if !strings.Contains(msg, "証明書期限") {
+		t.Errorf("expected 証明書期限, got:\n%s", msg)
+	}
+	if !strings.Contains(msg, "警告閾値: 30日前") {
+		t.Errorf("expected 警告閾値: 30日前, got:\n%s", msg)
+	}
+}
+
+func TestFormatFailures_WhoisExpiry(t *testing.T) {
+	failures := []CheckResult{
+		{
+			Check:  CheckEntry{Type: "WHOIS_EXPIRY", Name: "@", WarnDays: 60},
+			Actual: []string{"domain expires in 30 days (2026-04-10)"},
+			OK:     false,
+		},
+	}
+	msg := FormatFailures("example.com", failures)
+	if !strings.Contains(msg, "ドメイン期限") {
+		t.Errorf("expected ドメイン期限, got:\n%s", msg)
+	}
+	if !strings.Contains(msg, "警告閾値: 60日前") {
+		t.Errorf("expected 警告閾値: 60日前, got:\n%s", msg)
+	}
+}
+
+func TestFormatFailures_NSConsistency(t *testing.T) {
+	failures := []CheckResult{
+		{
+			Check:  CheckEntry{Type: "NS_CONSISTENCY", Name: "@", Expected: []string{"A"}},
+			Actual: []string{"example.com A: ns1.example.com. returned [1.2.3.4], ns2.example.com. returned [5.6.7.8]"},
+			OK:     false,
+		},
+	}
+	msg := FormatFailures("example.com", failures)
+	if !strings.Contains(msg, "ネームサーバー不整合") {
+		t.Errorf("expected ネームサーバー不整合, got:\n%s", msg)
+	}
+}
+
+func TestFormatFailures_Propagation(t *testing.T) {
+	failures := []CheckResult{
+		{
+			Check:  CheckEntry{Type: "PROPAGATION", Name: "@", Expected: []string{"1.2.3.4"}},
+			Actual: []string{"Cloudflare (1.1.1.1:53): [5.6.7.8]"},
+			OK:     false,
+		},
+	}
+	msg := FormatFailures("example.com", failures)
+	if !strings.Contains(msg, "伝播不一致") {
+		t.Errorf("expected 伝播不一致, got:\n%s", msg)
+	}
+	if !strings.Contains(msg, "Cloudflare") {
+		t.Errorf("expected Cloudflare, got:\n%s", msg)
+	}
+}
+
 func TestSendSlack(t *testing.T) {
 	var received SlackMessage
 

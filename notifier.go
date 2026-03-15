@@ -27,12 +27,47 @@ func FormatFailures(domain string, failures []CheckResult) string {
 
 		if f.Error != "" {
 			b.WriteString(fmt.Sprintf("エラー: %s\n", f.Error))
-		} else if f.Check.Contains != "" {
-			b.WriteString(fmt.Sprintf("期待値（部分一致）: %s\n", f.Check.Contains))
-			b.WriteString(fmt.Sprintf("実際値: %s\n", strings.Join(f.Actual, ", ")))
 		} else {
-			b.WriteString(fmt.Sprintf("期待値: %s\n", strings.Join(f.Check.Expected, ", ")))
-			b.WriteString(fmt.Sprintf("実際値: %s\n", strings.Join(f.Actual, ", ")))
+			switch f.Check.Type {
+			case "BLOCKLIST":
+				b.WriteString("ブロックリスト検知:\n")
+				for _, entry := range f.Actual {
+					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+				}
+			case "CERT_EXPIRY":
+				b.WriteString(fmt.Sprintf("証明書期限: %s\n", strings.Join(f.Actual, ", ")))
+				certWarn := f.Check.WarnDays
+				if certWarn == 0 {
+					certWarn = 30
+				}
+				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", certWarn))
+			case "WHOIS_EXPIRY":
+				b.WriteString(fmt.Sprintf("ドメイン期限: %s\n", strings.Join(f.Actual, ", ")))
+				whoisWarn := f.Check.WarnDays
+				if whoisWarn == 0 {
+					whoisWarn = 60
+				}
+				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", whoisWarn))
+			case "NS_CONSISTENCY":
+				b.WriteString("ネームサーバー不整合:\n")
+				for _, entry := range f.Actual {
+					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+				}
+			case "PROPAGATION":
+				b.WriteString(fmt.Sprintf("期待値: %s\n", strings.Join(f.Check.Expected, ", ")))
+				b.WriteString("伝播不一致:\n")
+				for _, entry := range f.Actual {
+					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+				}
+			default:
+				if f.Check.Contains != "" {
+					b.WriteString(fmt.Sprintf("期待値（部分一致）: %s\n", f.Check.Contains))
+					b.WriteString(fmt.Sprintf("実際値: %s\n", strings.Join(f.Actual, ", ")))
+				} else {
+					b.WriteString(fmt.Sprintf("期待値: %s\n", strings.Join(f.Check.Expected, ", ")))
+					b.WriteString(fmt.Sprintf("実際値: %s\n", strings.Join(f.Actual, ", ")))
+				}
+			}
 		}
 
 		if i < len(failures)-1 {

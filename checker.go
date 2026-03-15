@@ -160,7 +160,27 @@ func RunAllChecks(cfg *Config, baseURL string) []CheckResult {
 
 	var failures []CheckResult
 	for _, check := range cfg.Checks {
-		result := RunCheck(cfg, check, client, baseURL)
+		var result CheckResult
+		switch check.Type {
+		case "BLOCKLIST":
+			result = RunBlocklistCheck(cfg, check)
+		case "CERT_EXPIRY":
+			result = RunCertCheck(cfg, check)
+		case "WHOIS_EXPIRY":
+			result = RunWhoisCheck(cfg, check)
+		case "NS_CONSISTENCY":
+			result = RunNSConsistencyCheck(cfg, check)
+		case "PROPAGATION":
+			result = RunPropagationCheck(cfg, check)
+		case "A", "NS", "CNAME", "MX", "TXT":
+			result = RunCheck(cfg, check, client, baseURL)
+		default:
+			result = CheckResult{
+				Check: check,
+				OK:    false,
+				Error: fmt.Sprintf("unknown check type: %s", check.Type),
+			}
+		}
 		if !result.OK {
 			failures = append(failures, result)
 		}

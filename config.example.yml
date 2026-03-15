@@ -1,25 +1,72 @@
 domain: example.com
 checks:
+  # --- DNS record checks ---
+
+  # A record: verify IPv4 address
   - type: A
     name: "@"
     expected:
       - "93.184.216.34"
+
+  # MX record: verify mail exchange (include priority number)
   - type: MX
     name: "@"
     expected:
       - "10 mail.example.com."
+
+  # TXT record: verify SPF exists (substring match)
   - type: TXT
     name: "@"
     contains: "v=spf1"
+
+  # NS record: verify nameservers
   - type: NS
     name: "@"
     expected:
       - "ns1.example.com."
       - "ns2.example.com."
+
+  # CNAME record: verify canonical name
   - type: CNAME
     name: "www"
     expected:
       - "example.com."
+
+  # --- Extended monitoring ---
+
+  # Blocklist: check if IPs are listed on DNS blocklists
+  # Uses default blocklists (Spamhaus, SpamCop, Barracuda) if blocklists not specified.
+  # Resolves domain A record if host not specified.
+  - type: BLOCKLIST
+    name: "@"
+    host: "93.184.216.34"
+    # blocklists:               # optional: override default blocklists
+    #   - "zen.spamhaus.org"
+    #   - "bl.spamcop.net"
+
+  # NS consistency: verify all authoritative NS return identical results
+  - type: NS_CONSISTENCY
+    name: "@"
+    expected:
+      - "A"
+
+  # Certificate expiry: warn before SSL certificate expires
+  - type: CERT_EXPIRY
+    name: "@"
+    host: "example.com:443"
+    warn_days: 30
+
+  # Propagation: verify records are consistent across public resolvers
+  - type: PROPAGATION
+    name: "@"
+    expected:
+      - "93.184.216.34"
+
+  # Domain expiry: warn before domain registration expires
+  - type: WHOIS_EXPIRY
+    name: "@"
+    warn_days: 60
+
 notify:
   slack_webhook_env: "SLACK_WEBHOOK_URL"
   template: "default"
