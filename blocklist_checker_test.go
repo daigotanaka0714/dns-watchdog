@@ -205,7 +205,7 @@ func TestRunBlocklistCheck_AllClear(t *testing.T) {
 	}
 
 	cfg := &Config{Domain: "example.com"}
-	check := CheckEntry{Type: "BLOCKLIST", Name: "@", Expected: []string{"1.2.3.4"}}
+	check := CheckEntry{Type: "BLOCKLIST", Name: "@", Host: "1.2.3.4"}
 	result := RunBlocklistCheck(cfg, check)
 	if !result.OK {
 		t.Errorf("expected OK=true, got false. Error: %s", result.Error)
@@ -223,12 +223,47 @@ func TestRunBlocklistCheck_Listed(t *testing.T) {
 	)
 
 	cfg := &Config{Domain: "example.com"}
-	check := CheckEntry{Type: "BLOCKLIST", Name: "@", Expected: []string{"1.2.3.4"}}
+	check := CheckEntry{Type: "BLOCKLIST", Name: "@", Host: "1.2.3.4"}
 	result := RunBlocklistCheck(cfg, check)
 	if result.OK {
 		t.Error("expected OK=false for listed IP")
 	}
 	if len(result.Actual) == 0 {
 		t.Error("expected actual to contain blocklist names")
+	}
+}
+
+func TestRunBlocklistCheck_MultipleIPs(t *testing.T) {
+	origLookup := lookupHostFunc
+	defer func() { lookupHostFunc = origLookup }()
+
+	// Domain resolves to two IPs; second one is listed
+	lookupHostFunc = mockLookup(
+		map[string][]string{
+			"example.com":                       {"1.2.3.4", "5.6.7.8"},
+			"8.7.6.5.zen.spamhaus.org":          {"127.0.0.2"},
+		},
+		nil,
+	)
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{Type: "BLOCKLIST", Name: "@"}
+
+	result := RunBlocklistCheck(cfg, check)
+
+	if result.OK {
+		t.Error("expected OK=false because 5.6.7.8 is listed")
+	}
+	if len(result.Actual) == 0 {
+		t.Error("expected actual to contain listing for 5.6.7.8")
+	}
+	found := false
+	for _, a := range result.Actual {
+		if strings.Contains(a, "5.6.7.8") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected listing for 5.6.7.8, got: %v", result.Actual)
 	}
 }

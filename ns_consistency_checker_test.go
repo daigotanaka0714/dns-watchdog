@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -103,6 +105,37 @@ func TestRunNSConsistencyCheck_MXConsistency(t *testing.T) {
 	result := RunNSConsistencyCheck(cfg, check)
 	if !result.OK {
 		t.Errorf("expected OK=true for consistent MX, got false. Error: %s", result.Error)
+	}
+}
+
+func TestRunNSConsistencyCheck_PartialQueryFailure(t *testing.T) {
+	origNSLookup := nsLookupFn
+	origQueryNS := queryNSFn
+	defer func() {
+		nsLookupFn = origNSLookup
+		queryNSFn = origQueryNS
+	}()
+
+	nsLookupFn = func(domain string) ([]string, error) {
+		return []string{"ns1.example.com.", "ns2.example.com.", "ns3.example.com."}, nil
+	}
+	queryNSFn = func(domain, ns, qtype string) ([]string, error) {
+		if ns == "ns2.example.com." {
+			return nil, fmt.Errorf("connection timeout")
+		}
+		return []string{"1.2.3.4"}, nil
+	}
+
+	cfg := &Config{Domain: "example.com"}
+	check := CheckEntry{Type: "NS_CONSISTENCY", Name: "@", Expected: []string{"A"}}
+	result := RunNSConsistencyCheck(cfg, check)
+
+	// Should fail because of the query error
+	if result.OK {
+		t.Error("expected OK=false when a NS query fails")
+	}
+	if !strings.Contains(result.Error, "connection timeout") {
+		t.Errorf("expected error about connection timeout, got: %s", result.Error)
 	}
 }
 

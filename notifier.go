@@ -36,10 +36,18 @@ func FormatFailures(domain string, failures []CheckResult) string {
 				}
 			case "CERT_EXPIRY":
 				b.WriteString(fmt.Sprintf("証明書期限: %s\n", strings.Join(f.Actual, ", ")))
-				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", f.Check.WarnDays))
+				certWarn := f.Check.WarnDays
+				if certWarn == 0 {
+					certWarn = 30
+				}
+				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", certWarn))
 			case "WHOIS_EXPIRY":
 				b.WriteString(fmt.Sprintf("ドメイン期限: %s\n", strings.Join(f.Actual, ", ")))
-				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", f.Check.WarnDays))
+				whoisWarn := f.Check.WarnDays
+				if whoisWarn == 0 {
+					whoisWarn = 60
+				}
+				b.WriteString(fmt.Sprintf("警告閾値: %d日前\n", whoisWarn))
 			case "NS_CONSISTENCY":
 				b.WriteString("ネームサーバー不整合:\n")
 				for _, entry := range f.Actual {

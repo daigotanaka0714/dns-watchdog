@@ -15,8 +15,12 @@ import (
 	"time"
 )
 
-func newTLSServer(notAfter time.Time) *httptest.Server {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func newTLSServer(t testing.TB, notAfter time.Time) *httptest.Server {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
 	template := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject:      pkix.Name{CommonName: "test"},
@@ -24,7 +28,10 @@ func newTLSServer(notAfter time.Time) *httptest.Server {
 		NotAfter:     notAfter,
 		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
 	}
-	certDER, _ := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("failed to create certificate: %v", err)
+	}
 	cert := tls.Certificate{
 		Certificate: [][]byte{certDER},
 		PrivateKey:  key,
@@ -36,7 +43,7 @@ func newTLSServer(notAfter time.Time) *httptest.Server {
 }
 
 func TestRunCertCheck_Valid(t *testing.T) {
-	server := newTLSServer(time.Now().Add(90 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(90 * 24 * time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")
@@ -54,7 +61,7 @@ func TestRunCertCheck_Valid(t *testing.T) {
 }
 
 func TestRunCertCheck_ExpiringSoon(t *testing.T) {
-	server := newTLSServer(time.Now().Add(10 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(10 * 24 * time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")
@@ -72,7 +79,7 @@ func TestRunCertCheck_ExpiringSoon(t *testing.T) {
 }
 
 func TestRunCertCheck_AlreadyExpired(t *testing.T) {
-	server := newTLSServer(time.Now().Add(-5 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(-5 * 24 * time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")

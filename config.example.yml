@@ -26,6 +26,12 @@ checks:
       - "ns1.example.com."
       - "ns2.example.com."
 
+  # CNAME record: verify canonical name
+  - type: CNAME
+    name: "www"
+    expected:
+      - "example.com."
+
   # --- Extended monitoring ---
 
   # Blocklist: check if IPs are listed on DNS blocklists

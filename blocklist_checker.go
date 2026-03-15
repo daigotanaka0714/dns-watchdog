@@ -60,35 +60,29 @@ func reverseIP(ip string) (string, error) {
 	return parts[3] + "." + parts[2] + "." + parts[1] + "." + parts[0], nil
 }
 
-// RunBlocklistCheck checks if the IP (from check.Host or resolved from domain)
-// is listed on any DNSBL. It uses check.Blocklists if provided, otherwise
+// resolveIPs returns the list of IPs to check. It uses check.Host if set,
+// otherwise resolves the domain's A records.
+func resolveIPs(cfg *Config, check CheckEntry) ([]string, error) {
+	if check.Host != "" {
+		return []string{check.Host}, nil
+	}
+	addrs, err := lookupHostFunc(cfg.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve domain %s: %v", cfg.Domain, err)
+	}
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("no A record found for %s", cfg.Domain)
+	}
+	return addrs, nil
+}
+
+// RunBlocklistCheck checks if the IPs (from check.Host or resolved from domain)
+// are listed on any DNSBL. It uses check.Blocklists if provided, otherwise
 // defaultBlocklists. One DNSBL failure does NOT abort remaining checks.
 func RunBlocklistCheck(cfg *Config, check CheckEntry) CheckResult {
 	result := CheckResult{Check: check, OK: true}
 
-	host := check.Host
-	if host == "" {
-		// Use first IP from Expected if available
-		if len(check.Expected) > 0 {
-			host = check.Expected[0]
-		} else {
-			// Resolve the domain's A record to get an IP
-			addrs, err := lookupHostFunc(cfg.Domain)
-			if err != nil {
-				result.OK = false
-				result.Error = fmt.Sprintf("failed to resolve domain %s: %v", cfg.Domain, err)
-				return result
-			}
-			if len(addrs) == 0 {
-				result.OK = false
-				result.Error = fmt.Sprintf("no A record found for %s", cfg.Domain)
-				return result
-			}
-			host = addrs[0]
-		}
-	}
-
-	reversedIP, err := reverseIP(host)
+	ips, err := resolveIPs(cfg, check)
 	if err != nil {
 		result.OK = false
 		result.Error = err.Error()
@@ -102,14 +96,22 @@ func RunBlocklistCheck(cfg *Config, check CheckEntry) CheckResult {
 
 	var listedOn []string
 	var warnings []string
-	for _, bl := range blocklists {
-		listed, err := checkBlocklistWith(reversedIP, bl)
+	for _, ip := range ips {
+		reversedIP, err := reverseIP(ip)
 		if err != nil {
 			warnings = append(warnings, err.Error())
-			continue // Don't abort — check remaining blocklists
+			continue
 		}
-		if listed {
-			listedOn = append(listedOn, fmt.Sprintf("%s listed on %s", host, bl))
+
+		for _, bl := range blocklists {
+			listed, err := checkBlocklistWith(reversedIP, bl)
+			if err != nil {
+				warnings = append(warnings, err.Error())
+				continue
+			}
+			if listed {
+				listedOn = append(listedOn, fmt.Sprintf("%s listed on %s", ip, bl))
+			}
 		}
 	}
 

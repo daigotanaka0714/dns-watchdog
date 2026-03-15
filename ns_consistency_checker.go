@@ -101,6 +101,7 @@ func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
 		checkTypes = defaultNSCheckTypes
 	}
 
+	var queryErrors []string
 	for _, qtype := range checkTypes {
 		var referenceResult []string
 		var referenceNS string
@@ -108,9 +109,9 @@ func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
 		for _, ns := range nameservers {
 			records, err := queryNSFn(domain, ns, qtype)
 			if err != nil {
-				result.OK = false
-				result.Error = fmt.Sprintf("query to %s failed for %s %s: %v", ns, domain, qtype, err)
-				return result
+				queryErrors = append(queryErrors,
+					fmt.Sprintf("%s %s query to %s: %v", domain, qtype, ns, err))
+				continue
 			}
 
 			sorted := make([]string, len(records))
@@ -131,6 +132,11 @@ func RunNSConsistencyCheck(cfg *Config, check CheckEntry) CheckResult {
 				}
 			}
 		}
+	}
+
+	if len(queryErrors) > 0 {
+		result.OK = false
+		result.Error = strings.Join(queryErrors, "; ")
 	}
 
 	return result
