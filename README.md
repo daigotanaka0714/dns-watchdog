@@ -10,7 +10,8 @@ DNS record monitoring tool with Slack notifications.
 - **SSL certificate expiry**: warns before certificates expire
 - **DNS propagation**: verifies records are consistent across major public resolvers (Google, Cloudflare, OpenDNS, Quad9)
 - **Domain expiry**: WHOIS-based domain registration expiry warnings
-- **Slack notifications**: sends alerts on failures via incoming webhook
+- **Slack notifications**: severity-based color-coded alerts via Slack Attachment API with structured fields
+- **Multi-language**: built-in English and Japanese notification labels, with custom overrides
 - **DNS-over-HTTPS**: queries Google Public DNS (dns.google) -- no local resolver dependency
 - **Single binary**: zero runtime dependencies, easy to deploy
 - **CLI + GitHub Action**: run locally or on a schedule in CI
@@ -100,7 +101,7 @@ checks:
     warn_days: 60
 notify:
   slack_webhook_env: "SLACK_WEBHOOK_URL"
-  template: "default"
+  language: "en"    # "en" or "ja"
 ```
 
 #### Check types
@@ -126,6 +127,45 @@ Each check requires either `expected` (a list of exact values) or `contains` (a 
 | `CERT_EXPIRY` | Warn before SSL/TLS certificate expires | `host`: address to connect to (default: `domain:443`), `warn_days`: threshold (default: 30) |
 | `PROPAGATION` | Verify DNS records are consistent across public resolvers | `expected`: expected record values |
 | `WHOIS_EXPIRY` | Warn before domain registration expires (supports all TLDs) | `warn_days`: threshold (default: 60) |
+
+### Notification format
+
+Slack notifications use the Attachment API with severity-based color coding:
+
+- **ERROR** (red) — check failed to execute (timeout, connection error)
+- **WARNING** (yellow) — check ran but result doesn't match expected
+
+Each notification includes:
+- Severity badge and color sidebar
+- Human-readable summary of what happened
+- Structured fields: Record, Domain, recommended Action
+- Footer with timestamp
+
+#### Language configuration
+
+Set `language` under `notify` to `"en"` (default) or `"ja"`:
+
+```yaml
+notify:
+  slack_webhook_env: "SLACK_WEBHOOK_URL"
+  language: "ja"
+```
+
+#### Custom label overrides
+
+Override any built-in label via `custom_labels`:
+
+```yaml
+notify:
+  slack_webhook_env: "SLACK_WEBHOOK_URL"
+  language: "en"
+  custom_labels:
+    title: "DNS Monitor: %s"
+    error: "CRITICAL"
+    footer: "my-org/dns-watchdog"
+```
+
+Available label keys: `title`, `error`, `warning`, `record`, `domain`, `action`, `footer`, `summary_dns_mismatch`, `summary_dns_contains_mismatch`, `summary_cert_expiry`, `summary_whois_expiry`, `summary_blocklist`, `summary_ns_inconsistency`, `summary_propagation`, `action_retry`, `action_verify_dns`, `action_renew_cert`, `action_renew_domain`, `action_request_delist`, `action_check_ns`, `action_wait_propagation`.
 
 ### GitHub Action workflow example
 

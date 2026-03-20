@@ -69,4 +69,13 @@ checks:
 
 notify:
   slack_webhook_env: "SLACK_WEBHOOK_URL"
-  template: "default"
+
+  # Language for notification labels: "en" (default) or "ja"
+  language: "en"
+
+  # Custom label overrides (optional)
+  # Override any built-in label key. See README for full list of keys.
+  # custom_labels:
+  #   title: "DNS Monitor: %s"
+  #   error: "CRITICAL"
+  #   footer: "my-org/dns-watchdog"
