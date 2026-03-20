@@ -19,7 +19,10 @@ checks:
     contains: "v=spf1"
 notify:
   slack_webhook_env: "SLACK_URL"
-  template: "default"
+  language: "ja"
+  custom_labels:
+    title: "DNS Monitor: %s"
+    error: "CRITICAL"
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yml")
@@ -49,6 +52,45 @@ notify:
 	}
 	if cfg.Notify.SlackWebhookEnv != "SLACK_URL" {
 		t.Errorf("expected SLACK_URL, got %s", cfg.Notify.SlackWebhookEnv)
+	}
+	if cfg.Notify.Language != "ja" {
+		t.Errorf("expected language ja, got %s", cfg.Notify.Language)
+	}
+	if cfg.Notify.CustomLabels["title"] != "DNS Monitor: %s" {
+		t.Errorf("expected custom title, got %s", cfg.Notify.CustomLabels["title"])
+	}
+	if cfg.Notify.CustomLabels["error"] != "CRITICAL" {
+		t.Errorf("expected custom error CRITICAL, got %s", cfg.Notify.CustomLabels["error"])
+	}
+}
+
+func TestLoadConfig_DefaultLanguage(t *testing.T) {
+	content := `
+domain: example.com
+checks:
+  - type: A
+    name: "@"
+    expected:
+      - "1.2.3.4"
+notify:
+  slack_webhook_env: "SLACK_URL"
+`
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "config.yml")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	cfg, err := LoadConfig(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Notify.Language != "" {
+		t.Errorf("expected empty language (defaults to en), got %s", cfg.Notify.Language)
+	}
+	if cfg.Notify.CustomLabels != nil {
+		t.Errorf("expected nil custom_labels, got %v", cfg.Notify.CustomLabels)
 	}
 }
 

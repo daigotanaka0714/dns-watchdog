@@ -32,8 +32,9 @@ var selfContainedTypes = map[string]bool{
 }
 
 type NotifyConfig struct {
-	SlackWebhookEnv string `yaml:"slack_webhook_env"`
-	Template        string `yaml:"template"`
+	SlackWebhookEnv string            `yaml:"slack_webhook_env"`
+	Language        string            `yaml:"language,omitempty"`
+	CustomLabels    map[string]string `yaml:"custom_labels,omitempty"`
 }
 
 func LoadConfig(path string) (*Config, error) {
