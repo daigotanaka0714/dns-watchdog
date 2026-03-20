@@ -32,8 +32,9 @@ Download a prebuilt binary from the
 
 ```yaml
 - uses: daigotanaka0714/dns-watchdog@v1
-  env:
-    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  with:
+    config: ./config.yml
+    slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 ## Usage
@@ -142,9 +143,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: daigotanaka0714/dns-watchdog@v1
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          DNS_WATCHDOG_CONFIG: ./config.yml
+        with:
+          config: ./config.yml
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 ## License
