@@ -3,32 +3,61 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter here on purpose. Filtering pull_request by target
+  # branch means a stacked PR — one whose base is another PR's branch — runs
+  # no CI at all, and gets merged having never been verified.
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # The Go version has exactly one source of truth: the `go` directive in
+      # go.mod. Never repeat it here.
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version-file: go.mod
 
+      - name: Read pinned tool versions
+        id: versions
+        run: |
+          . .config/agent-check.env
+          echo "golangci_lint=$GOLANGCI_LINT_VERSION" >> "$GITHUB_OUTPUT"
+
+      # `go mod download`, not `go mod tidy`: CI verifies, it does not rewrite
+      # go.mod/go.sum. Whether tidy would change anything is its own check.
       - name: Download dependencies
-        run: go mod tidy
+        run: go mod download
 
-      - name: Run tests
-        run: go test -v -race ./...
+      # The steps below mirror bin/agent-check, in the same order. Change one,
+      # change the other.
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go mod tidy is a no-op
+        run: go mod tidy -diff
 
       - name: Build
-        run: go build -o dns-watchdog .
+        run: CGO_ENABLED=0 go build -o dns-watchdog .
+
+      - name: Test
+        run: CGO_ENABLED=1 go test -race ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: ${{ steps.versions.outputs.golangci_lint }}

@@ -43,7 +43,7 @@ func newTLSServer(t testing.TB, notAfter time.Time) *httptest.Server {
 }
 
 func TestRunCertCheck_Valid(t *testing.T) {
-	server := newTLSServer(t, time.Now().Add(90 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(90*24*time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")
@@ -61,7 +61,7 @@ func TestRunCertCheck_Valid(t *testing.T) {
 }
 
 func TestRunCertCheck_ExpiringSoon(t *testing.T) {
-	server := newTLSServer(t, time.Now().Add(10 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(10*24*time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")
@@ -79,7 +79,7 @@ func TestRunCertCheck_ExpiringSoon(t *testing.T) {
 }
 
 func TestRunCertCheck_AlreadyExpired(t *testing.T) {
-	server := newTLSServer(t, time.Now().Add(-5 * 24 * time.Hour))
+	server := newTLSServer(t, time.Now().Add(-5*24*time.Hour))
 	defer server.Close()
 
 	addr := strings.TrimPrefix(server.URL, "https://")

@@ -32,7 +32,7 @@ func RunCertCheck(cfg *Config, check CheckEntry) CheckResult {
 		result.Error = fmt.Sprintf("TLS connection to %s failed: %v", host, err)
 		return result
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	tlsConn, ok := conn.(*tls.Conn)
 	if !ok {

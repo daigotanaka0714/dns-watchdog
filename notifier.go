@@ -35,8 +35,8 @@ type SlackField struct {
 }
 
 const (
-	colorError   = "#e01e5a"
-	colorWarning = "#ecb22e"
+	colorError               = "#e01e5a"
+	colorWarning             = "#ecb22e"
 	maxAttachmentsPerMessage = 20
 )
 
@@ -137,53 +137,53 @@ func FormatSlackAttachment(domain string, failures []CheckResult, labels map[str
 func FormatFailures(domain string, failures []CheckResult) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("DNS Alert: %s\n", domain))
-	b.WriteString(fmt.Sprintf("Detected at: %s\n\n", time.Now().UTC().Format(time.RFC3339)))
+	fmt.Fprintf(&b, "DNS Alert: %s\n", domain)
+	fmt.Fprintf(&b, "Detected at: %s\n\n", time.Now().UTC().Format(time.RFC3339))
 
 	for i, f := range failures {
-		b.WriteString(fmt.Sprintf("Record: %s (%s)\n", f.Check.Type, f.Check.Name))
+		fmt.Fprintf(&b, "Record: %s (%s)\n", f.Check.Type, f.Check.Name)
 
 		if f.Error != "" {
-			b.WriteString(fmt.Sprintf("Error: %s\n", f.Error))
+			fmt.Fprintf(&b, "Error: %s\n", f.Error)
 		} else {
 			switch f.Check.Type {
 			case "BLOCKLIST":
 				b.WriteString("Blocklist detected:\n")
 				for _, entry := range f.Actual {
-					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+					fmt.Fprintf(&b, "  - %s\n", entry)
 				}
 			case "CERT_EXPIRY":
-				b.WriteString(fmt.Sprintf("Certificate expiry: %s\n", strings.Join(f.Actual, ", ")))
+				fmt.Fprintf(&b, "Certificate expiry: %s\n", strings.Join(f.Actual, ", "))
 				certWarn := f.Check.WarnDays
 				if certWarn == 0 {
 					certWarn = 30
 				}
-				b.WriteString(fmt.Sprintf("Warning threshold: %d days\n", certWarn))
+				fmt.Fprintf(&b, "Warning threshold: %d days\n", certWarn)
 			case "WHOIS_EXPIRY":
-				b.WriteString(fmt.Sprintf("Domain expiry: %s\n", strings.Join(f.Actual, ", ")))
+				fmt.Fprintf(&b, "Domain expiry: %s\n", strings.Join(f.Actual, ", "))
 				whoisWarn := f.Check.WarnDays
 				if whoisWarn == 0 {
 					whoisWarn = 60
 				}
-				b.WriteString(fmt.Sprintf("Warning threshold: %d days\n", whoisWarn))
+				fmt.Fprintf(&b, "Warning threshold: %d days\n", whoisWarn)
 			case "NS_CONSISTENCY":
 				b.WriteString("NS inconsistency:\n")
 				for _, entry := range f.Actual {
-					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+					fmt.Fprintf(&b, "  - %s\n", entry)
 				}
 			case "PROPAGATION":
-				b.WriteString(fmt.Sprintf("Expected: %s\n", strings.Join(f.Check.Expected, ", ")))
+				fmt.Fprintf(&b, "Expected: %s\n", strings.Join(f.Check.Expected, ", "))
 				b.WriteString("Propagation mismatch:\n")
 				for _, entry := range f.Actual {
-					b.WriteString(fmt.Sprintf("  - %s\n", entry))
+					fmt.Fprintf(&b, "  - %s\n", entry)
 				}
 			default:
 				if f.Check.Contains != "" {
-					b.WriteString(fmt.Sprintf("Expected (contains): %s\n", f.Check.Contains))
-					b.WriteString(fmt.Sprintf("Actual: %s\n", strings.Join(f.Actual, ", ")))
+					fmt.Fprintf(&b, "Expected (contains): %s\n", f.Check.Contains)
+					fmt.Fprintf(&b, "Actual: %s\n", strings.Join(f.Actual, ", "))
 				} else {
-					b.WriteString(fmt.Sprintf("Expected: %s\n", strings.Join(f.Check.Expected, ", ")))
-					b.WriteString(fmt.Sprintf("Actual: %s\n", strings.Join(f.Actual, ", ")))
+					fmt.Fprintf(&b, "Expected: %s\n", strings.Join(f.Check.Expected, ", "))
+					fmt.Fprintf(&b, "Actual: %s\n", strings.Join(f.Actual, ", "))
 				}
 			}
 		}
@@ -208,10 +208,10 @@ func SendSlack(webhookURL string, payload SlackPayload) error {
 	if err != nil {
 		return fmt.Errorf("failed to send Slack message: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Slack webhook returned status %d", resp.StatusCode)
+		return fmt.Errorf("slack webhook returned status %d", resp.StatusCode)
 	}
 
 	return nil

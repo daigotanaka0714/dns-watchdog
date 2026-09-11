@@ -1,0 +1,15 @@
+# Worktree hooks for this repo (worktrunk / `wt`).
+#
+# There is deliberately no `wt step copy-ignored` here: Go worktrees share the
+# global module cache at $GOMODCACHE, so there is nothing gitignored worth
+# copying between them, and copying a stale build output would only make the
+# gate lie.
+
+# Runs in the background when a new worktree is created. The module cache is
+# global and usually already warm, so this is a no-op on a warm machine and a
+# useful prefetch on a cold one.
+post-start = "go mod download"
+
+# The merge gate is the same command an agent runs and the same set of checks
+# CI runs. Blocking: a failure aborts the merge.
+pre-merge = "bin/agent-check"

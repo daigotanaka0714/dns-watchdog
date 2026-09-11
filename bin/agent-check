@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+#
+# agent-check — the single command that decides whether this repo is "done".
+#
+# Stages run fastest-first and stop at the first failure, so the tail of the
+# output is always the error that matters. The last five lines are a fixed
+# block; agents are expected to read only that block.
+#
+# Every stage here has a matching step in .github/workflows/ci.yml, and both
+# read pinned tool versions from .config/agent-check.env. Change one, change
+# the other — a gate that disagrees with CI is worse than no gate.
+
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+# Pinned tool versions and thresholds live in one file, read by both the gate
+# and CI. They are deliberately not passed as `VAR=n bin/agent-check`: Claude
+# Code allow-rules stop matching once a command starts with an env assignment.
+if [ -f .config/agent-check.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . .config/agent-check.env
+  set +a
+fi
+
+GOLANGCI_LINT_VERSION="${GOLANGCI_LINT_VERSION:-}"
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+LOG="$WORK/stage.log"
+
+TIMINGS=""
+FAILED_STAGE=""
+
+note() { printf '    %s\n' "$*"; }
+
+# run_stage <name> <command...>
+# Command output is only printed when the stage fails, so a green run stays
+# short enough for an agent to read in full.
+run_stage() {
+  local name=$1
+  shift
+  local start=$SECONDS
+  printf '>>> %s\n' "$name"
+  if "$@" >"$LOG" 2>&1; then
+    TIMINGS="${TIMINGS}${name}:$((SECONDS - start))s "
+    return 0
+  fi
+  cat "$LOG"
+  TIMINGS="${TIMINGS}${name}:$((SECONDS - start))s "
+  FAILED_STAGE="$name"
+  return 1
+}
+
+skip_stage() {
+  local name=$1
+  shift
+  printf '>>> %s (skipped)\n' "$name"
+  note "$*"
+  TIMINGS="${TIMINGS}${name}:skip "
+}
+
+# --- stages ---------------------------------------------------------------
+
+# gofmt exits 0 even when it has something to say, so the check is "printed
+# nothing", not "exited zero".
+stage_fmt() {
+  local unformatted
+  unformatted=$(gofmt -l .) || return 1
+  [ -z "$unformatted" ] && return 0
+  echo "Not gofmt-clean:"
+  echo "$unformatted"
+  echo
+  echo "Fix with: gofmt -w ."
+  return 1
+}
+
+# CI must never rewrite go.mod/go.sum — that is a fixup, not a verification.
+# `-diff` reports what tidy would change without touching the tree.
+stage_tidy() {
+  go mod tidy -diff
+}
+
+emit_result() {
+  local status=$1 next=$2
+  echo
+  echo "=== AGENT-CHECK RESULT ==="
+  echo "STATUS: $status"
+  echo "FAILED_STAGE: ${FAILED_STAGE:-none}"
+  echo "TIMINGS: ${TIMINGS% }"
+  echo "NEXT: $next"
+}
+
+fail() {
+  emit_result FAIL "上の ${FAILED_STAGE} エラーを直して再実行。green になるまで PR を作らない。"
+  exit 1
+}
+
+# --- pipeline -------------------------------------------------------------
+
+run_stage fmt   stage_fmt                                  || fail
+run_stage vet   go vet ./...                               || fail
+run_stage tidy  stage_tidy                                 || fail
+# CGO_ENABLED is set per stage, never once for the whole script: -race needs
+# cgo, while the release/Docker build is deliberately static. A host that
+# exports CGO_ENABLED=0 would otherwise break the test stage only.
+run_stage build env CGO_ENABLED=0 go build -o "$WORK/dns-watchdog" . || fail
+run_stage test  env CGO_ENABLED=1 go test -race ./...      || fail
+
+if ! command -v golangci-lint >/dev/null 2>&1; then
+  skip_stage lint "golangci-lint not installed; CI still runs it." \
+    "Install the pinned version with:" \
+    "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION:-latest}"
+else
+  have=$(golangci-lint version 2>/dev/null | sed -n 's/.*has version \([^ ]*\).*/v\1/p')
+  if [ -n "$GOLANGCI_LINT_VERSION" ] && [ -n "$have" ] && [ "$have" != "$GOLANGCI_LINT_VERSION" ]; then
+    note "warning: local golangci-lint $have != pinned $GOLANGCI_LINT_VERSION (CI uses the pinned one)"
+  fi
+  run_stage lint golangci-lint run ./... || fail
+fi
+
+emit_result PASS "PR を作ってよい。マージはしない。"
