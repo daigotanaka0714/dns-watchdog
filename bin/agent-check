@@ -93,7 +93,7 @@ emit_result() {
 }
 
 fail() {
-  emit_result FAIL "上の ${FAILED_STAGE} エラーを直して再実行。green になるまで PR を作らない。"
+  emit_result FAIL "Fix the ${FAILED_STAGE} errors above and re-run. Do not open a PR until this is green."
   exit 1
 }
 
@@ -120,4 +120,4 @@ else
   run_stage lint golangci-lint run ./... || fail
 fi
 
-emit_result PASS "PR を作ってよい。マージはしない。"
+emit_result PASS "Safe to open a PR. Do not merge — a human reviews and merges."

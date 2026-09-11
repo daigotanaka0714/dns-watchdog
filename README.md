@@ -204,7 +204,7 @@ golangci-lint — fastest first, stopping at the first failure — then prints:
 STATUS: PASS
 FAILED_STAGE: none
 TIMINGS: fmt:0s vet:0s tidy:1s build:0s test:2s lint:2s
-NEXT: PR を作ってよい。マージはしない。
+NEXT: Safe to open a PR. Do not merge - a human reviews and merges.
 ```
 
 `.github/workflows/ci.yml` runs the same checks in the same order, so a local
