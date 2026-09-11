@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git merge:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(wt merge:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin master:*)"
+    ],
+    "allow": [
+      "Bash(bin/agent-check)",
+      "Bash(gofmt:*)",
+      "Bash(go vet:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go mod download)",
+      "Bash(go mod tidy -diff)",
+      "Bash(golangci-lint run:*)"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+version: "2"
+
+linters:
+  # errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+
+issues:
+  # A gate must not hide findings behind a cap. golangci-lint defaults to
+  # showing 3 issues per check, which made 16 QF1012 hits look like 3.
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -188,6 +188,41 @@ jobs:
           slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
+## Development
+
+Run every check with one command:
+
+```
+bin/agent-check
+```
+
+It runs gofmt, `go vet`, `go mod tidy -diff`, the build, `go test -race`, and
+golangci-lint — fastest first, stopping at the first failure — then prints:
+
+```
+=== AGENT-CHECK RESULT ===
+STATUS: PASS
+FAILED_STAGE: none
+TIMINGS: fmt:0s vet:0s tidy:1s build:0s test:2s lint:2s
+NEXT: Safe to open a PR. Do not merge - a human reviews and merges.
+```
+
+`.github/workflows/ci.yml` runs the same checks in the same order, so a local
+PASS is a good predictor of a green CI run. If the two ever need to change,
+change both.
+
+golangci-lint is the one stage that is skipped rather than failed when the tool
+is missing locally (shown as `lint:skip`); CI always runs it. Install the
+pinned version with:
+
+```
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(. .config/agent-check.env && echo "$GOLANGCI_LINT_VERSION")
+```
+
+Tool versions have a single source of truth: the Go version is the `go`
+directive in `go.mod` (CI uses `go-version-file: go.mod`), and golangci-lint is
+pinned in `.config/agent-check.env`.
+
 ## License
 
 [MIT](LICENSE)

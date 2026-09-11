@@ -222,14 +222,14 @@ func TestFormatSlackAttachment_MultipleFailures_PretextOnlyFirst(t *testing.T) {
 	labels := ResolveLabels("en", nil)
 	failures := []CheckResult{
 		{
-			Check: CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
+			Check:  CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
 			Actual: []string{"5.6.7.8"},
-			OK:    false,
+			OK:     false,
 		},
 		{
-			Check: CheckEntry{Type: "MX", Name: "@", Expected: []string{"10 mail.example.com."}},
+			Check:  CheckEntry{Type: "MX", Name: "@", Expected: []string{"10 mail.example.com."}},
 			Actual: []string{"20 other.example.com."},
-			OK:    false,
+			OK:     false,
 		},
 	}
 
@@ -250,9 +250,9 @@ func TestFormatSlackAttachment_JapaneseLabels(t *testing.T) {
 	labels := ResolveLabels("ja", nil)
 	failures := []CheckResult{
 		{
-			Check: CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
+			Check:  CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
 			Actual: []string{"5.6.7.8"},
-			OK:    false,
+			OK:     false,
 		},
 	}
 
@@ -520,9 +520,9 @@ func TestSendSlack_PayloadIsValidJSON(t *testing.T) {
 	labels := ResolveLabels("en", nil)
 	failures := []CheckResult{
 		{
-			Check: CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
+			Check:  CheckEntry{Type: "A", Name: "@", Expected: []string{"1.2.3.4"}},
 			Actual: []string{"5.6.7.8"},
-			OK:    false,
+			OK:     false,
 		},
 	}
 	payload := FormatSlackAttachment("example.com", failures, labels)

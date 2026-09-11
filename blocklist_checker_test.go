@@ -240,8 +240,8 @@ func TestRunBlocklistCheck_MultipleIPs(t *testing.T) {
 	// Domain resolves to two IPs; second one is listed
 	lookupHostFunc = mockLookup(
 		map[string][]string{
-			"example.com":                       {"1.2.3.4", "5.6.7.8"},
-			"8.7.6.5.zen.spamhaus.org":          {"127.0.0.2"},
+			"example.com":              {"1.2.3.4", "5.6.7.8"},
+			"8.7.6.5.zen.spamhaus.org": {"127.0.0.2"},
 		},
 		nil,
 	)
