@@ -52,7 +52,10 @@ version (the gate and CI both read it). Do not write a version anywhere else.
   `Claude-Session:` line in the PR body or in any commit message
 - **Always name the repository and include the URL when referring to a PR.**
   `#24` alone does not identify anything when several repositories are in play
-- Never use `--delete-branch` on a stacked PR: deleting the base branch makes
-  GitHub auto-close the PR stacked on top of it
+- Stacked PRs: before merging the base PR, re-target the one stacked on top of
+  it to the default branch first (`gh pr edit <n> --base main`). Merging the
+  base deletes its branch, and that takes the stacked PR with it. Most of these
+  repositories delete the branch on merge automatically, so this is a step you
+  have to take, not an option you can decline
 
 <!-- daigo-lab-ops:completion-criteria:end -->
