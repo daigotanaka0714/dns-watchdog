@@ -46,10 +46,21 @@ version (the gate and CI both read it). Do not write a version anywhere else.
   propose that as its own PR and explain why.
 - **Never silence a lint rule to get green.** Fix what it reports.
 
+### While working
+
+- **Do not chain shell commands with `&&` or `;`.** Run `cd` as its own call
+  too. The auto mode classifier reads a chained command as one unit and
+  blocks the whole thing (`cd <dir> && <script that creates a worktree>` was
+  blocked; the same commands run separately went through). A chained command
+  also stops matching the `Bash(...)` permission rules, which match by prefix
+
 ### When opening a PR
 
 - Do not put a Claude session URL (`claude.ai/code/session_...`) or a
   `Claude-Session:` line in the PR body or in any commit message
+- Do not add a `🤖 Generated with Claude Code` line to the PR body or to any
+  commit message. This is a backstop: the real fix is `attribution.pr: ""` in
+  the user's Claude Code settings, which is where the instruction comes from
 - **Always name the repository and include the URL when referring to a PR.**
   `#24` alone does not identify anything when several repositories are in play
 - Stacked PRs: before merging the base PR, re-target the one stacked on top of
