@@ -54,6 +54,16 @@ version (the gate and CI both read it). Do not write a version anywhere else.
   blocked; the same commands run separately went through). A chained command
   also stops matching the `Bash(...)` permission rules, which match by prefix
 
+### When writing
+
+Code comments, docs, commit messages and PR bodies.
+
+- Keep it short and factual. Do not restate what the diff already shows
+- Keep temporary circumstances (a staged rollout, a workaround until a fix
+  ships) out of code, comments and docs. Put them in the PR body if needed
+- Do not annotate only some items in a list. Match how the others are written
+- Do not write what you have not verified. Mark a guess as unverified
+
 ### When opening a PR
 
 - Do not put a Claude session URL (`claude.ai/code/session_...`) or a
