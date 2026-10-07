@@ -59,10 +59,21 @@ version (the gate and CI both read it). Do not write a version anywhere else.
 Code comments, docs, commit messages and PR bodies.
 
 - Keep it short and factual. Do not restate what the diff already shows
+- Put a half-width space outside `**…**` when it sits next to other text.
+  GitHub does not render `これは**「重要」**です` as bold when the bold text
+  starts or ends with punctuation. Run `lab mdcheck <file>` or
+  `lab mdcheck --pr <number>` before posting a PR body, draft or result file
 - Keep temporary circumstances (a staged rollout, a workaround until a fix
   ships) out of code, comments and docs. Put them in the PR body if needed
 - Do not annotate only some items in a list. Match how the others are written
 - Do not write what you have not verified. Mark a guess as unverified
+- In anything posted outside (PR bodies, issues, comments), do not write what
+  only you know: local labels such as review-note numbers, local file names,
+  exchanges with the coordinator or other agents, or how a branch was rebuilt
+- Do not describe fixes as a diff from an earlier draft. Fold them into the
+  section they belong to (what is checked and how). A reader of an unreviewed
+  PR has no "before" to compare with
+- Before posting, check that no local-only number or file name slipped in
 
 ### When opening a PR
 
