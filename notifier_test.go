@@ -542,3 +542,31 @@ func TestSendSlack_PayloadIsValidJSON(t *testing.T) {
 		t.Errorf("expected warning color, got %s", parsed.Attachments[0].Color)
 	}
 }
+
+func TestSendSlack_ErrorDoesNotLeakWebhookURL(t *testing.T) {
+	// The path of a Slack incoming webhook URL is the credential.
+	const secretPath = "/services/T00000000/B00000000/not-a-real-token"
+
+	closed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	closed.Close()
+
+	tests := []struct {
+		name string
+		url  string
+	}{
+		{"unreachable", closed.URL + secretPath},
+		{"unparseable", "http://example.com:badport" + secretPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SendSlack(tt.url, SlackPayload{})
+			if err == nil {
+				t.Fatal("expected an error, got nil")
+			}
+			if strings.Contains(err.Error(), "not-a-real-token") {
+				t.Errorf("error contains the webhook URL: %v", err)
+			}
+		})
+	}
+}

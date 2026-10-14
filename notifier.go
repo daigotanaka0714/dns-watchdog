@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -206,6 +208,11 @@ func SendSlack(webhookURL string, payload SlackPayload) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Post(webhookURL, "application/json", bytes.NewReader(body))
 	if err != nil {
+		// *url.Error embeds the request URL, and the webhook URL is the credential.
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			return fmt.Errorf("failed to send Slack message: %s: %w", urlErr.Op, urlErr.Err)
+		}
 		return fmt.Errorf("failed to send Slack message: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
