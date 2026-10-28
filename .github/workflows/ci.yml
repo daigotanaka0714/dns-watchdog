@@ -28,6 +28,7 @@ jobs:
         run: |
           . .config/agent-check.env
           echo "golangci_lint=$GOLANGCI_LINT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "govulncheck=$GOVULNCHECK_VERSION" >> "$GITHUB_OUTPUT"
 
       # `go mod download`, not `go mod tidy`: CI verifies, it does not rewrite
       # go.mod/go.sum. Whether tidy would change anything is its own check.
@@ -56,6 +57,10 @@ jobs:
 
       - name: Test
         run: CGO_ENABLED=1 go test -race ./...
+
+      # Fails when a known vulnerability is reachable from this code.
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@${{ steps.versions.outputs.govulncheck }} ./...
 
       - name: Lint
         uses: golangci/golangci-lint-action@v9

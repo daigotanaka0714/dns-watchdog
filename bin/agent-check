@@ -25,6 +25,7 @@ if [ -f .config/agent-check.env ]; then
 fi
 
 GOLANGCI_LINT_VERSION="${GOLANGCI_LINT_VERSION:-}"
+GOVULNCHECK_VERSION="${GOVULNCHECK_VERSION:-}"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -107,6 +108,7 @@ run_stage tidy  stage_tidy                                 || fail
 # exports CGO_ENABLED=0 would otherwise break the test stage only.
 run_stage build env CGO_ENABLED=0 go build -o "$WORK/dns-watchdog" . || fail
 run_stage test  env CGO_ENABLED=1 go test -race ./...      || fail
+run_stage vuln  go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION:-latest}" ./... || fail
 
 if ! command -v golangci-lint >/dev/null 2>&1; then
   skip_stage lint "golangci-lint not installed; CI still runs it." \
