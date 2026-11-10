@@ -74,6 +74,10 @@ Code comments, docs, commit messages and PR bodies.
   section they belong to (what is checked and how). A reader of an unreviewed
   PR has no "before" to compare with
 - Before posting, check that no local-only number or file name slipped in
+- Do not write a bare word starting with `@` in commit messages, PR bodies
+  or comments. GitHub notifies the user or team with that name (an E2E tag
+  such as `@smoke`, a package such as `@types/node`). Wrap it in backticks or
+  drop the `@`. `lab mdcheck` reports bare `@` words outside backticks
 
 ### When opening a PR
 
@@ -89,5 +93,14 @@ Code comments, docs, commit messages and PR bodies.
   base deletes its branch, and that takes the stacked PR with it. Most of these
   repositories delete the branch on merge automatically, so this is a step you
   have to take, not an option you can decline
+
+### When updating a PR body
+
+- Update it with `gh api`. To pass the body from a file, use an uppercase
+  `-F body=@<file>`:
+  `gh api -X PATCH repos/<owner>/<repo>/pulls/<number> -F body=@<file>`.
+  With a lowercase `-f`, the literal string `@<file>` becomes the body
+- After updating, fetch the body again (`gh pr view <number> --json body`)
+  and check that it changed
 
 <!-- daigo-lab-ops:completion-criteria:end -->
