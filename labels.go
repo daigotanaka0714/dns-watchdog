@@ -22,6 +22,19 @@ var labelsEN = map[string]string{
 	"action_request_delist":         "Request delisting",
 	"action_check_ns":               "Check NS configuration",
 	"action_wait_propagation":       "Wait or verify records",
+	"cause":                         "Likely cause",
+	"cause_http_rate_limited":       "The DNS-over-HTTPS resolver is rate limiting requests",
+	"cause_http_client_error":       "The DNS-over-HTTPS resolver rejected the query (HTTP %d)",
+	"cause_http_server_error":       "The DNS-over-HTTPS resolver is failing (HTTP %d)",
+	"cause_nxdomain":                "The name does not exist (NXDOMAIN): a wrong name, a deleted record, or an expired domain",
+	"cause_servfail":                "The resolver could not get a valid answer (SERVFAIL): often a DNSSEC validation failure or an unresponsive nameserver",
+	"cause_refused":                 "A nameserver refused the query (REFUSED): the zone may not be served there",
+	"cause_no_records":              "The name exists but has no record of this type",
+	"cause_ttl_stale":               "If this record was changed recently, resolvers can keep the old value for up to %d seconds (TTL)",
+	"action_check_config":           "Check the name and type in the config",
+	"action_check_name_and_expiry":  "Check the record name and the domain registration",
+	"action_check_dnssec_ns":        "Check DNSSEC (DS records) and nameserver health",
+	"action_add_record":             "Add the missing record",
 }
 
 var labelsJA = map[string]string{
@@ -46,6 +59,19 @@ var labelsJA = map[string]string{
 	"action_request_delist":         "デリスト申請",
 	"action_check_ns":               "NS設定を確認",
 	"action_wait_propagation":       "伝播待ちまたはレコード確認",
+	"cause":                         "考えられる原因",
+	"cause_http_rate_limited":       "DNS-over-HTTPS リゾルバがリクエストを制限しています",
+	"cause_http_client_error":       "DNS-over-HTTPS リゾルバがクエリを拒否しました（HTTP %d）",
+	"cause_http_server_error":       "DNS-over-HTTPS リゾルバに障害が出ています（HTTP %d）",
+	"cause_nxdomain":                "名前が存在しません（NXDOMAIN）。名前の誤り、レコードの削除、ドメインの失効のいずれかが考えられます",
+	"cause_servfail":                "リゾルバが有効な応答を得られませんでした（SERVFAIL）。DNSSEC の検証失敗やネームサーバーの無応答が多い原因です",
+	"cause_refused":                 "ネームサーバーがクエリを拒否しました（REFUSED）。そのサーバーにゾーンが無い可能性があります",
+	"cause_no_records":              "名前は存在しますが、この種類のレコードがありません",
+	"cause_ttl_stale":               "レコードを最近変更した場合、リゾルバは最大 %d 秒（TTL）古い値を保持することがあります",
+	"action_check_config":           "設定ファイルの名前と種類を確認",
+	"action_check_name_and_expiry":  "レコード名とドメイン登録を確認",
+	"action_check_dnssec_ns":        "DNSSEC（DS レコード）とネームサーバーの状態を確認",
+	"action_add_record":             "不足しているレコードを追加",
 }
 
 var builtinLabels = map[string]map[string]string{

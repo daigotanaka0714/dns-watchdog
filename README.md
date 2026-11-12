@@ -141,6 +141,21 @@ Each notification includes:
 - Structured fields: Record, Domain, recommended Action
 - Footer with timestamp
 
+For DNS record checks (`A`, `MX`, `TXT`, `NS`, `CNAME`) the summary also gives a likely cause, and the Action changes to match, based on what the resolver reported:
+
+| Resolver reported | Likely cause shown |
+|---|---|
+| `NXDOMAIN` | The name does not exist: a wrong name, a deleted record, or an expired domain |
+| `SERVFAIL` | No valid answer: often a DNSSEC validation failure or an unresponsive nameserver |
+| `REFUSED` | A nameserver refused the query: the zone may not be served there |
+| No error, no records of the type | The name exists but has no record of this type |
+| No error, different value | If the record was changed recently, resolvers can keep the old value up to its TTL |
+| HTTP 429 from the DoH endpoint | The resolver is rate limiting requests |
+| Other HTTP 4xx from the DoH endpoint | The resolver rejected the query; check the name and type in the config |
+| HTTP 5xx from the DoH endpoint | The resolver is failing; retry |
+
+These are hypotheses drawn from the response, not confirmed diagnoses.
+
 #### Language configuration
 
 Set `language` under `notify` to `"en"` (default) or `"ja"`:
@@ -165,7 +180,7 @@ notify:
     footer: "my-org/dns-watchdog"
 ```
 
-Available label keys: `title`, `error`, `warning`, `record`, `domain`, `action`, `footer`, `summary_dns_mismatch`, `summary_dns_contains_mismatch`, `summary_cert_expiry`, `summary_whois_expiry`, `summary_blocklist`, `summary_ns_inconsistency`, `summary_propagation`, `action_retry`, `action_verify_dns`, `action_renew_cert`, `action_renew_domain`, `action_request_delist`, `action_check_ns`, `action_wait_propagation`.
+Available label keys: `title`, `error`, `warning`, `record`, `domain`, `action`, `footer`, `summary_dns_mismatch`, `summary_dns_contains_mismatch`, `summary_cert_expiry`, `summary_whois_expiry`, `summary_blocklist`, `summary_ns_inconsistency`, `summary_propagation`, `action_retry`, `action_verify_dns`, `action_renew_cert`, `action_renew_domain`, `action_request_delist`, `action_check_ns`, `action_wait_propagation`, `cause`, `cause_http_rate_limited`, `cause_http_client_error`, `cause_http_server_error`, `cause_nxdomain`, `cause_servfail`, `cause_refused`, `cause_no_records`, `cause_ttl_stale`, `action_check_config`, `action_check_name_and_expiry`, `action_check_dnssec_ns`, `action_add_record`.
 
 ### GitHub Action workflow example
 
