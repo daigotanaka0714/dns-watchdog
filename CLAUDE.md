@@ -53,6 +53,13 @@ version (the gate and CI both read it). Do not write a version anywhere else.
   blocks the whole thing (`cd <dir> && <script that creates a worktree>` was
   blocked; the same commands run separately went through). A chained command
   also stops matching the `Bash(...)` permission rules, which match by prefix
+- **Before you stop and hand the turn back, record whose turn it is with
+  `lab state`** (in a worktree started by `lab new` / `lab task`). The
+  coordinator's board sorts workspaces by it. `--ball human` needs `--ask`
+  with the next step you want and your recommendation; `--ball external`
+  needs `--waiting-on`. Use `agent` when you will carry on yourself and
+  `none` when only cleanup is left. Add `--pr <number>` once a PR exists:
+  `lab state --ball human --now "Opened the PR" --ask "Review and merge" --pr 12`
 
 ### When writing
 
