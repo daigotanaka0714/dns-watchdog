@@ -109,6 +109,10 @@ func FormatSlackAttachment(domain string, failures []CheckResult, labels map[str
 		sevKey, color := classifySeverity(f)
 		sevLabel := labels[sevKey]
 		summary, action := generateSummary(f, labels)
+		if s, ok := Diagnose(f); ok {
+			summary += "\n" + labels["cause"] + ": " + s.formatCause(labels)
+			action = labels[s.Action]
+		}
 		recordLabel := fmt.Sprintf("%s (%s)", f.Check.Type, f.Check.Name)
 
 		att := SlackAttachment{
