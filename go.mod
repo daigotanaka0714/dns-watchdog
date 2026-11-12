@@ -1,6 +1,6 @@
 module github.com/daigotanaka0714/dns-watchdog
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/likexian/whois v1.15.7
