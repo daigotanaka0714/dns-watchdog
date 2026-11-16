@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"sort"
 	"strings"
-	"time"
 )
 
 var defaultNSCheckTypes = []string{"A", "MX", "TXT", "NS"}
@@ -23,48 +21,7 @@ var nsLookupFn = func(domain string) ([]string, error) {
 	return hosts, nil
 }
 
-var queryNSFn = func(domain, ns, qtype string) ([]string, error) {
-	if !strings.Contains(ns, ":") {
-		ns = ns + ":53"
-	}
-	resolver := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{Timeout: 5 * time.Second}
-			return d.DialContext(ctx, "udp", ns)
-		},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	switch qtype {
-	case "A":
-		return resolver.LookupHost(ctx, domain)
-	case "MX":
-		mxs, err := resolver.LookupMX(ctx, domain)
-		if err != nil {
-			return nil, err
-		}
-		var results []string
-		for _, mx := range mxs {
-			results = append(results, fmt.Sprintf("%d %s", mx.Pref, mx.Host))
-		}
-		return results, nil
-	case "TXT":
-		return resolver.LookupTXT(ctx, domain)
-	case "NS":
-		nss, err := resolver.LookupNS(ctx, domain)
-		if err != nil {
-			return nil, err
-		}
-		var results []string
-		for _, ns := range nss {
-			results = append(results, ns.Host)
-		}
-		return results, nil
-	default:
-		return nil, fmt.Errorf("unsupported query type for NS consistency: %s", qtype)
-	}
-}
+var queryNSFn = queryNameserver
 
 func slicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
