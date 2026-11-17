@@ -68,6 +68,9 @@ checks:
     warn_days: 60
 
 notify:
+  # Name of the environment variable that holds the Slack webhook URL.
+  # When running as the GitHub Action, use "DNS_MONITOR_SLACK_WEBHOOK_URL":
+  # the action passes its slack_webhook input under that name.
   slack_webhook_env: "SLACK_WEBHOOK_URL"
 
   # Language for notification labels: "en" (default) or "ja"
