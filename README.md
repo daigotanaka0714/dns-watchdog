@@ -38,6 +38,19 @@ Download a prebuilt binary from the
     slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
+The action hands `slack_webhook` to dns-watchdog as the environment variable
+`DNS_MONITOR_SLACK_WEBHOOK_URL`, so the config must read that name:
+
+```yaml
+notify:
+  slack_webhook_env: "DNS_MONITOR_SLACK_WEBHOOK_URL"
+```
+
+With any other name the checks still run and a failure still fails the job,
+but the Slack notification is skipped; the log only shows
+`Warning: failed to send notification: environment variable ... is not set`. See
+[GitHub Action workflow example](#github-action-workflow-example).
+
 ## Usage
 
 ### CLI
@@ -55,7 +68,7 @@ DNS_WATCHDOG_CONFIG=./my-config.yml dns-watchdog
 | Variable | Description |
 |---|---|
 | `DNS_WATCHDOG_CONFIG` | Path to the YAML config file (default: `config.yml` next to the executable) |
-| `SLACK_WEBHOOK_URL` | Slack incoming webhook URL for failure notifications (env var name is configurable in the config) |
+| `SLACK_WEBHOOK_URL` | Slack incoming webhook URL for failure notifications. The name is whatever `notify.slack_webhook_env` in the config says; `SLACK_WEBHOOK_URL` is the name used in the examples below. The GitHub Action always sets `DNS_MONITOR_SLACK_WEBHOOK_URL` |
 
 #### Exit codes
 
@@ -201,6 +214,13 @@ jobs:
         with:
           config: ./config.yml
           slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+`config.yml` for this workflow names the variable the action sets:
+
+```yaml
+notify:
+  slack_webhook_env: "DNS_MONITOR_SLACK_WEBHOOK_URL"
 ```
 
 ## Development
